@@ -1,0 +1,1 @@
+This is a very important file for me because this file contains data which need to go through the algorithm to be compressed. I like doing critical stuff, such as compressing large files and doing low level stuff even though i don't really want to work with hardware fulltime.
