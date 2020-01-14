@@ -2,38 +2,37 @@
 #include "../headers/stack.h"
 
 
-STACK *new_STACK(const unsigned int size)
+STACK* new_STACK(const unsigned int size)
 {
-  int *ds = malloc(size * sizeof(int));
-  int ptr = 0;
 
-  STACK *s = malloc(sizeof(STACK));
-  s->ds = ds;
-  s->ptr = ptr;
-  s->size = size;
+    STACK* s = malloc(sizeof(STACK));
+    s->ds    = malloc(size * sizeof(int));
+    s->ptr   = 0;
+    s->size  = size;
 
-  return s;
+    return s;
 }
 
 void push(STACK *s, const int val)
 {
-  if (s->ptr == s->size)
-    printf("STACK full, item cannot be pushed.\n");
-  else 
-    s->ds[(s->ptr++)] = val;
+    if (s->ptr == s->size)
+        printf("STACK full, item cannot be pushed.\n");
+    else 
+        s->ds[(s->ptr++)] = val;
 }
 
 int pop(STACK *s)
 {
-  return (int)s->ds[(--s->ptr)];
+    return (int)s->ds[(--s->ptr)];
 }
 
-long stack_size(STACK *s, int len)
+long s_size(STACK* s)
 {
-  return sizeof(s) * len;
+    return s->size;
 }
 
 void dis_STACK(STACK *s)
 {
-  free(s);
+    free(s->ds);
+    free(s);
 }

@@ -12,12 +12,10 @@ typedef struct
     int size;
 } STACK;
 
-STACK *new_STACK(const unsigned int size);
-
-void push(STACK *s, const int val);
-
-int pop(STACK* s);
-
-void dis_STACK(STACK* s);
+STACK* new_STACK(const unsigned int size);
+void   push(STACK *s, const int val);
+int    pop(STACK* s);
+long   s_size(STACK *s);
+void   dis_STACK(STACK* s);
 
 #endif
