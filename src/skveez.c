@@ -1,85 +1,210 @@
-
+#include "../headers/util.h"
+#include "../headers/tree.h"
+#include "../headers/stack.h"
 #include "../headers/skveez.h"
-#include "../headers/map.h"
-#include <string.h>
 
 const unsigned int BYTE = 8;
+int f_size = 0, MAX_CMPD_SIZE = 0;
 
-
-// static dictionary* create_char_map(char c, int count, char* path)
-// {
-//     return void
-// }
-
-
-Node *n_init(int _val)
+void skveez(const char* data, const char* d)
 {
-    Node *r = malloc(sizeof(Node));
-    r->left = NULL;
-    r->right = NULL;
-    r->value = _val;
-    return r;
+    char* raw_data = load_file(data);
+
+    f_size = (int)strlen(raw_data);
+    if (!f_size) exit(1);
+    MAX_CMPD_SIZE = ((f_size) / 2) + 1; 
+
+    NODE* char_tree = optimised_tree(raw_data, f_size);
+
+    char codes[f_size][BYTE/2];
+    char out_data[MAX_CMPD_SIZE];
+    const char* comp_data = (char*) &out_data;
+
+    for (int i = 0; i < f_size; ++i)
+    {
+        char* sc = find_bincode(char_tree, raw_data[i]);
+        strcpy(codes[i], sc);
+        free(sc);
+    }
+
+
+    const int loops = f_size % 2 == 0 ? f_size : f_size - 1;
+
+    for (int i = 0; i <= loops; i += 2)
+    {
+        char* pair_code = malloc(sizeof(char) * (BYTE + 1));
+        strcpy(pair_code, codes[i]);
+        strcat(pair_code, codes[i + 1]);
+        pair_code[BYTE] = '\0';
+
+        int ascii_code = bin_to_decimal(pair_code);
+
+        if (ascii_code <= 32) ascii_code += 32 * 2;
+
+        out_data[i/2] = ascii_code;
+
+        free(pair_code);
+		
+    }
+	
+	NODE* name = new_NODE
+
+
+
+    // out_data[MAX_CMPD_SIZE] = '\0';
+
+    write_file("cmpd.txt", comp_data);
+
+    char* compressed_data = load_file(d);
+
+    double raw_size = (double) strlen(raw_data);
+    double cmpd_size = (double) strlen(compressed_data);
+    double rate = (raw_size - cmpd_size) / raw_size * 100;
+
+    printf("Original Size: %.0f\n", raw_size);
+    printf("Compressed Size: %.0f\n", cmpd_size);
+    printf("Compression Rate: %0.5f %%.\n", rate);
+
+    printf("\n%p\n", char_tree);
+    printf("%p\n", raw_data);
+    printf("%p\n", compressed_data);
+
+    // dis_NODE(char_tree);
+    // free(raw_data);
+    free(compressed_data);
+
+    puts("\nEND!");
 }
 
-void add(Node *root, int _val)
+void create_quartiles(const int* set, const int size, STACK* s)
 {
-    if (_val < root->value)
+    int mid = (int)(size / 2);
+    int left_size = mid, right_size = size - (mid + 1);
+    int left[left_size], right[right_size];
+    push(s, set[mid]);
+
+    for (int i = 0; i < mid; ++i)
     {
-        if (root->left == NULL)
-        {
-            root->left = n_init(_val);
-        } else {
-            add(root->left, _val);
+        if (i < left_size) {
+            left[i] = set[i];
+        }
+        if (i < right_size) {
+            right[i] = set[(mid + 1) + i];
         }
     }
-    else if (_val > root->value)
+
+    if (size > 0)
     {
-        if (root->right == NULL)
-        {
-            root->right = n_init(_val);
-        } else {
-            add(root->right, _val);
-        }
+        if (left_size)
+            create_quartiles(left, left_size, s);
+    
+        if (right_size)
+            create_quartiles(right, right_size, s);
     }
+} 
+
+// this function require the given type for paramaters
+// it can be casted however inside the function
+int cmp_chars(const void* a, const void* b)
+{
+    return (*(int *)a - *(int *)b);
 }
 
-void find_bincode(Node *node, int c)
-{ // need to return the path or should add the path to the MAP struct
+NODE* optimised_tree(const char* data, int _size)
+{
+    int size = _size + 1;
+    int ascii_codes[size];
+    ascii_codes[size] = '\0';
+
+    for (size_t i = 0; i < size; ++i)
+    {
+        ascii_codes[i] = data[i];
+    }
+    
+    // Sorting ASCII codes
+    qsort(ascii_codes, size, sizeof(int), cmp_chars);
+    
+    int* unq_ascii_codes = to_set(ascii_codes, size);
+    int set_size = 0;
+    
+    for (int i = 0; i < size; ++i)
+    {
+        set_size += (unq_ascii_codes[i] != -1 && unq_ascii_codes[i] < 128) ? 1 : 0;
+    }
+
+    STACK* qs = new_STACK(set_size);
+    create_quartiles(unq_ascii_codes, set_size, qs);
+    STACK* quartiles = flipped(qs);
+    NODE* opt_tree = new_NODE(pop(quartiles));
+
+    for (int i = 1; i < set_size; ++i)
+    {
+        add(opt_tree, pop(quartiles));
+    }
+
+    free(unq_ascii_codes);
+    dis_STACK(qs);
+    dis_STACK(quartiles);
+
+    return opt_tree;
+}
+
+
+char* find_bincode(NODE* node, int c)
+{
     int found = 0;
     int node_trace[BYTE] = {-1, -1, -1, -1, -1, -1, -1, -1};
-    char path[8] = "";
-   
+    // char path[(BYTE/2) + 1] = "";
+    // char* ptr = (char*) &path;
+
+    char* path = malloc(((BYTE/2)+1) * sizeof(char));
+
     _find_bincode(node, c, node_trace, &found);
-    
+
     if (found) {
+        // char raw_path[BYTE] = "";
+        // char* raw_code;
+        int last_index = 0; // this variable might not be necessery
         for (int i = 0; i < BYTE; ++i)
         {
             if (node_trace[i] == 1) {
                 strcat(path, "1");
+                last_index++;
             } else if (node_trace[i] == 0) {
                 strcat(path, "0");
+                last_index++;
             }
         }
 
-        printf("Character: %c | Skveez Code: %s | Length: %lu | Found: %s\n\n", 
-            (char) c, 
-            path, 
-            strlen(path), 
-            found ? "TRUE" : "FALSE"
-        );
+        path[last_index] = '\0';
 
+
+        // printf("Character: %c | Skveez Code: %s | Length: %lu | Found: %s\n\n", 
+        //     (char) c, 
+        //     path, 
+        //     strlen(path), 
+        //     found ? "TRUE" : "FALSE"
+        // );
+
+
+        for (size_t i = 0; i < BYTE; i++)
+        {
+            node_trace[i] = -1;
+        }
     } else {
         printf("\n<%c> Not Found.\n\n", (char) c);
     }
+
+    return path;
 }
 
-static void _find_bincode(Node *node, int c, int* path, int *found)
+void _find_bincode(NODE *NODE, int c, int* path, int *found)
 {
     int i = 0;
 
-    if (node->value == c) *found = 1;
+    if (NODE->value == c) *found = 1;
 
-    if (node->left != NULL && !(*found))
+    if (NODE->left != NULL && !(*found))
     {
         while (i < BYTE)
         {
@@ -91,12 +216,12 @@ static void _find_bincode(Node *node, int c, int* path, int *found)
             }
         }
 
-        _find_bincode(node->left, c, path, found);
+        _find_bincode(NODE->left, c, path, found);
 
         if (!(*found)) path[i] = -1;
     }
 
-    if (node->right != NULL && !(*found))
+    if (NODE->right != NULL && !(*found))
     {
         while(i < BYTE)
         {
@@ -108,113 +233,9 @@ static void _find_bincode(Node *node, int c, int* path, int *found)
             }
         }
 
-        _find_bincode(node->right, c, path, found);
+        _find_bincode(NODE->right, c, path, found);
 
         if (!(*found)) path[i] = -1;
     }
 }
 
-void parse_r(Node *node)
-{
-    if (node->right != NULL)
-        parse_r(node->right);
-
-    printf("%d\n", node->value);
-
-    if (node->left != NULL)
-        parse_r(node->left);
-}
-
-int *rnumg(int from, int to, int smpl)
-{
-    int *nums = malloc(sizeof(from) * smpl);
-    srand(time(NULL));
-    int r;
-
-    for (int i = 0; i < smpl; ++i)
-    {
-        r = (rand() % to) + from;
-        nums[i] = r;
-    }
-
-    return nums;
-}
-
-int get_fsize(FILE *f)
-{
-    int size = 0; // number of characters
-    fseek(f, 0, SEEK_END);
-    size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-    return size;
-}
-
-char *load_file(const char *path)
-{
-    FILE *f = fopen(path, "r");
-    int size = get_fsize(f);
-    int bytes = sizeof(char) * size;
-    char *all = malloc(bytes);
-    char *buffer = malloc(bytes);
-
-    f_size = size;
-
-    while (f && fgets(buffer, size, f) != NULL)
-    {
-        strcat(all, buffer);
-    }
-
-    free(buffer);
-    fclose(f);
-
-
-    
-
-    return all;
-}
-
-void printcc(char *arr, int len)
-{
-    for (int i = 0; i < len; ++i)
-    {
-        printf("%c : %d\n", arr[i], ((int)arr[i]));
-    }
-}
-
-/* 
-	Seems to work fine for now but need to be more robust 
-	and need to go through proper testing.
-*/
-void bin_code(char *str)
-{
-    int len = strlen(str);
-    int bins[BYTE] = {}; // Array for flipping remainders
-    for (int i = 0; i < len; ++i)
-    {
-        int index = 0;
-        int den = (int)str[i];
-        while (den > 0)
-        {
-            int mod = den % 2;
-            bins[index++] = mod;
-            den /= 2;
-        }
-        //
-        for (int i = BYTE - 1; i > -1; i--)
-        {
-            printf("%d", bins[i]);
-        }
-        printf(" ");
-    }
-    printf("\n");
-}
-
-// when need to compress a string rather than a character
-void compress_code(char *str, Node *t)
-{
-    unsigned int i = 0;
-
-    while (str[i] != '\0')
-    {
-    }
-}
