@@ -16,13 +16,28 @@ void write_file(const char* fname, const char* data)
 {
     FILE* f = fopen(fname, "w");
 
-    if (f != NULL)
-    {
+    if (f != NULL) {
         fputs(data, f);
         fclose(f);
+        f = NULL;
     } else {
         exit(1);
     }
+}
+
+void append_file(const char* fname, const char* data)
+{
+    FILE* f = fopen(fname, "a");
+    if (f == NULL)
+    {
+        printf("Error appending to file %s\n", fname);
+        exit(EXIT_FAILURE);
+    } else {
+        fputs(data, f);
+    }
+
+    fclose(f);
+    f = NULL;
 }
 
 char* load_file(const char *path)
@@ -40,13 +55,36 @@ char* load_file(const char *path)
     }
 
     all[bytes] = '\0';
-
     free(buffer);
     fclose(f);
-
-    puts(all);
-
+    f = NULL;
     return all;
+}
+
+char** read_file_lines(const char* path, int start, int end)
+{
+    int delta = end - start;
+    FILE* f = fopen(path, "r");
+    if (delta < 1) // need to read at least one line
+    {
+        printf("Invalid line number <%d>\n", delta);
+        return NULL;
+    } else if (f == NULL) {
+        printf("Error reading the file <%s>.", path);
+        exit(EXIT_FAILURE);
+    }
+
+    char** buffer = malloc(sizeof(char*) * delta);
+    const unsigned int line_len = 256;
+
+    for (int i = 0; i <= delta; ++i)
+    {
+        buffer[i] = malloc(sizeof(char) * line_len);
+        fgets(buffer[i], line_len, f); // also reads the \n at the end
+    }
+
+    fclose(f);
+    return buffer;
 }
 
 
@@ -55,6 +93,7 @@ void write_bfile(const char* fname, const char* data, unsigned int size)
     FILE *f = fopen(fname,"wb");
     if (f != NULL)
         fwrite(data, size, 1, f);
+
     fclose(f);
     puts("Binary file written.");
 }
@@ -113,7 +152,7 @@ int* rnumg(int from, int to, int smpl)
     return nums;
 }
 
-int* to_set(const int* n, const int size)
+int* array_to_set(const int* n, const int size)
 {
     int *un = malloc(size * sizeof(int)); // free this
     for (size_t i = 0; i < size; i++) 
@@ -154,7 +193,33 @@ void printcc(char *arr, int len)
     }
 }
 
-void bin_code(const char *str)
+int* int_bincode(int num)
+{
+    int* bins = calloc(BYTE, sizeof(int)); 
+    int index = 0;
+
+    int den = num;
+
+    while (den > 0)
+    {
+        int mod = den % 2;
+        bins[index] = mod;
+        den /= 2;
+        index++;
+    }
+
+    for (int i = 0; i <= (BYTE/2); ++i)
+    {
+        int temp = bins[i];
+        bins[i] = bins[((BYTE - 1) - i)];
+        bins[((BYTE - 1) - i)] = temp;
+    }
+
+    return bins;
+}
+
+
+void bin_code(const char* str)
 {
     int len = strlen(str);
     int bins[BYTE]; 

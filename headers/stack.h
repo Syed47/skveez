@@ -15,8 +15,10 @@ typedef struct
 STACK* new_STACK(const int size);
 void   push(STACK *s, const int val);
 int    pop(STACK* s);
-int    s_size(STACK *s);
+int    peek(const STACK* s);
+int    s_maxsize(const STACK *s);
 void   dis_STACK(STACK* s);
-STACK*   flipped(STACK* s); // free() required
+int*   STACK_as_array(const STACK* s);
+void   STACK_flip(STACK* s); // free() required
 
 #endif
