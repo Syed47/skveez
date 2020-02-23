@@ -23,4 +23,5 @@ int*  array_to_set(const int* n, const int size);
 char** read_file_lines(const char* path, int start, int end);
 void  write_bfile(const char* fname, const char* data, unsigned int size);
 char* read_bfile(const char* fname);
+
 #endif
