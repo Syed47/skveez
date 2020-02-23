@@ -14,7 +14,7 @@ void unskveez(const char* src, const char* dest)
     puts(data);
     unsigned int data_size = strlen(data);
     print_tree(mt, 'c');
-    puts("______________");
+    // puts("______________");
     for (int i = 0; i < data_size; ++i)
     {
         int x = (int) data[i];
@@ -243,12 +243,12 @@ char* find_bincode(NODE* node, int c)
 
         path[code_len - 1] = '\0';
 
-        printf("Character: %c | Skveez Code: %s | Length: %lu | Found: %s\n\n", 
-            (char) c, 
-            path, 
-            strlen(path), 
-            found ? "TRUE" : "FALSE"
-        );
+//        printf("Character: %c | Skveez Code: %s | Length: %lu | Found: %s\n\n", 
+//            (char) c, 
+//            path, 
+//            strlen(path), 
+//            found ? "TRUE" : "FALSE"
+//        );
 
         for (int i = 0; i < BYTE; i++)
         {
